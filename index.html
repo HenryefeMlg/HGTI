@@ -27,13 +27,11 @@ header{
   margin-bottom:20px;
 }
 
-header img{
-  height:56px;
-}
+header img{ height:56px; }
 
 textarea{
   width:100%;
-  height:160px;
+  height:140px;
   font-family: monospace;
   padding:12px;
   border-radius:10px;
@@ -58,32 +56,29 @@ button.secondary{
 
 .canvas-wrapper{
   position:relative;
+  margin-top:24px;
   display:inline-block;
-  margin-top:20px;
 }
 
 canvas{
-  display:block;
   border:1px solid #999;
   image-rendering: pixelated;
 }
 
-/* GÖRSEL ÜSTÜ AYAR PANELİ */
-.overlay-controls{
-  position:absolute;
-  top:8px;
-  left:8px;
-  background:rgba(246,241,232,0.9);
-  padding:8px 10px;
-  border-radius:8px;
-  font-size:0.85rem;
+/* ÜST KONTROL PANELİ */
+.top-controls{
   display:flex;
-  gap:8px;
+  gap:10px;
   align-items:center;
+  background:#ffffffcc;
+  padding:10px 12px;
+  border-radius:12px;
+  margin-bottom:10px;
+  font-size:0.85rem;
 }
 
-.overlay-controls input{
-  width:56px;
+.top-controls input{
+  width:70px;
 }
 </style>
 </head>
@@ -102,109 +97,135 @@ canvas{
 2,0=#0000FF
 </textarea>
 <br>
-<button onclick="textToImage()">Görsele Çevir</button>
+<button onclick="drawFromText()">Görsele Çevir</button>
 
-<h3>Görsel → TXT (HGTI)</h3>
+<h3>Görsel Yükle (Otomatik TXT Oluşturur)</h3>
 <input type="file" id="imageInput" accept="image/*">
 <br>
-<button onclick="imageToText()">TXT’ye Dönüştür</button>
 <button class="secondary" onclick="downloadTXT()">TXT İndir</button>
 
 <div class="canvas-wrapper">
-  <canvas id="canvas"></canvas>
 
-  <!-- OPSİYONEL PİKSEL AYARLARI -->
-  <div class="overlay-controls">
+  <!-- GÖRSEL ÜSTÜ AYARLAR -->
+  <div class="top-controls">
+    <label>Genişlik(px)</label>
+    <input type="number" id="wInput" placeholder="auto">
+
+    <label>Yükseklik(px)</label>
+    <input type="number" id="hInput" placeholder="auto">
+
     <label>Piksel</label>
-    <input type="number" id="pixelSizeInput" value="10" min="1">
-    <label>Ölçek</label>
-    <input type="number" id="scaleInput" value="1" min="0.1" step="0.1">
-  </div>
-</div>
+    <input type="number" id="pixelInput" value="10" min="1">
 
-<h3>TXT Dosyası Yükle (Otomatik Görsele Çevirir)</h3>
-<input type="file" id="txtFileInput" accept=".txt,.hgti">
+    <button onclick="applyResize()">Uygula</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+</div>
 
 <script>
 let generatedTXT = "";
+let lastImageData = null;
 
-function getPixelSettings(){
-  return {
-    pixelSize: Number(document.getElementById("pixelSizeInput").value) || 10,
-    scale: Number(document.getElementById("scaleInput").value) || 1
-  };
+function drawFromText(){
+  const text = document.getElementById("textInput").value;
+  renderFromText(text);
 }
 
-function textToImageFromString(text){
-  const { pixelSize, scale } = getPixelSettings();
-
+function renderFromText(text){
+  const pixel = Number(document.getElementById("pixelInput").value) || 10;
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
-  const lines = text.split("\n");
 
+  const lines = text.split("\n");
   let maxX=0,maxY=0;
-  for(const l of lines){
-    if(!l.includes("=")) continue;
+
+  lines.forEach(l=>{
+    if(!l.includes("=")) return;
     const [p]=l.split("=");
     const [x,y]=p.split(",").map(Number);
     maxX=Math.max(maxX,x);
     maxY=Math.max(maxY,y);
-  }
+  });
 
-  canvas.width=(maxX+1)*pixelSize*scale;
-  canvas.height=(maxY+1)*pixelSize*scale;
-
-  ctx.setTransform(scale,0,0,scale,0,0);
+  canvas.width=(maxX+1)*pixel;
+  canvas.height=(maxY+1)*pixel;
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  for(const l of lines){
-    if(!l.includes("=")) continue;
+  lines.forEach(l=>{
+    if(!l.includes("=")) return;
     const [p,c]=l.split("=");
     const [x,y]=p.split(",").map(Number);
     ctx.fillStyle=c;
-    ctx.fillRect(x*pixelSize,y*pixelSize,pixelSize,pixelSize);
-  }
+    ctx.fillRect(x*pixel,y*pixel,pixel,pixel);
+  });
 }
 
-function textToImage(){
-  const text=document.getElementById("textInput").value;
-  textToImageFromString(text);
-}
-
-function imageToText(){
-  const file=document.getElementById("imageInput").files[0];
+document.getElementById("imageInput").addEventListener("change",()=>{
+  const file=imageInput.files[0];
   if(!file) return;
 
   const img=new Image();
   img.onload=()=>{
+    const w=Number(wInput.value)||img.width;
+    const h=Number(hInput.value)||img.height;
+
     const c=document.createElement("canvas");
-    c.width=img.width;
-    c.height=img.height;
+    c.width=w;
+    c.height=h;
     const ctx=c.getContext("2d");
-    ctx.drawImage(img,0,0);
+    ctx.drawImage(img,0,0,w,h);
 
-    const data=ctx.getImageData(0,0,c.width,c.height).data;
-    let out=[];
-
-    for(let y=0;y<c.height;y++){
-      for(let x=0;x<c.width;x++){
-        const i=(y*c.width+x)*4;
-        const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];
-        if(a>0){
-          out.push(`${x},${y}=#${hex(r)}${hex(g)}${hex(b)}`);
-        }
-      }
-    }
-
-    generatedTXT=out.join("\n");
-
-    if(out.length<5000){
-      document.getElementById("textInput").value=generatedTXT;
-    }else{
-      alert("Görsel büyük. TXT indirilebilir olarak hazırlandı.");
-    }
+    lastImageData=ctx.getImageData(0,0,w,h);
+    generateTXTFromImage();
+    drawCanvasFromImageData();
   };
   img.src=URL.createObjectURL(file);
+});
+
+function generateTXTFromImage(){
+  const d=lastImageData.data;
+  const w=lastImageData.width;
+  const h=lastImageData.height;
+  let out=[];
+
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const i=(y*w+x)*4;
+      const r=d[i],g=d[i+1],b=d[i+2],a=d[i+3];
+      if(a>0){
+        out.push(`${x},${y}=#${hex(r)}${hex(g)}${hex(b)}`);
+      }
+    }
+  }
+  generatedTXT=out.join("\n");
+}
+
+function drawCanvasFromImageData(){
+  const pixel=Number(pixelInput.value)||10;
+  const canvas=document.getElementById("canvas");
+  const ctx=canvas.getContext("2d");
+  const {width,height,data}=lastImageData;
+
+  canvas.width=width*pixel;
+  canvas.height=height*pixel;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  for(let y=0;y<height;y++){
+    for(let x=0;x<width;x++){
+      const i=(y*width+x)*4;
+      const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];
+      if(a>0){
+        ctx.fillStyle=`rgb(${r},${g},${b})`;
+        ctx.fillRect(x*pixel,y*pixel,pixel,pixel);
+      }
+    }
+  }
+}
+
+function applyResize(){
+  if(!lastImageData) return;
+  drawCanvasFromImageData();
 }
 
 function hex(v){
@@ -219,19 +240,6 @@ function downloadTXT(){
   a.download="image.hgti";
   a.click();
 }
-
-document.getElementById("txtFileInput").addEventListener("change",e=>{
-  const file=e.target.files[0];
-  if(!file) return;
-
-  const reader=new FileReader();
-  reader.onload=()=>{
-    const content=reader.result;
-    document.getElementById("textInput").value=content;
-    textToImageFromString(content);
-  };
-  reader.readAsText(file);
-});
 </script>
 
 </body>
