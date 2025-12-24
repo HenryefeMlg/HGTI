@@ -8,7 +8,6 @@
 :root{
   --bg:#F6F1E8;
   --primary:#2FAF9B;
-  --primary-light:#6FD6C4;
   --text:#1F2A2A;
 }
 
@@ -51,11 +50,6 @@ button{
   cursor:pointer;
 }
 
-button.secondary{
-  background:#ddd;
-  color:#333;
-}
-
 canvas{
   display:block;
   margin-top:20px;
@@ -73,103 +67,68 @@ canvas{
 </header>
 
 <h3>TXT / HGTI → Görsel</h3>
-<textarea id="textInput">
-0,0=#FF0000
-1,0=#00FF00
-2,0=#0000FF
-</textarea>
-<br>
-<button onclick="textToImage()">Görsele Çevir</button>
 
-<h3>Görsel → TXT (HGTI)</h3>
-<input type="file" id="imageInput" accept="image/*">
+<input type="file" id="txtFile" accept=".txt,.hgti">
 <br>
-<button onclick="imageToText()">TXT’ye Dönüştür</button>
-<button class="secondary" onclick="downloadTXT()">TXT İndir</button>
+<button onclick="fileToImage()">Dosyadan Görsel</button>
+
+<textarea id="textInput" placeholder="İstersen küçük dosyalar için buraya da yapıştırabilirsin"></textarea>
+
+<button onclick="textToImage()">Metinden Görsel</button>
 
 <canvas id="canvas"></canvas>
 
 <script>
 const pixelSize = 10;
-let generatedTXT = "";
 
-function textToImage(){
-  const text = document.getElementById("textInput").value;
+function parseAndDraw(text){
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
   const lines = text.split("\n");
 
-  let maxX=0,maxY=0;
+  let maxX = 0, maxY = 0;
   for(const l of lines){
     if(!l.includes("=")) continue;
-    const [p]=l.split("=");
-    const [x,y]=p.split(",").map(Number);
-    maxX=Math.max(maxX,x);
-    maxY=Math.max(maxY,y);
+    const [p] = l.split("=");
+    const [x,y] = p.split(",").map(Number);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
   }
 
-  canvas.width=(maxX+1)*pixelSize;
-  canvas.height=(maxY+1)*pixelSize;
+  canvas.width = (maxX + 1) * pixelSize;
+  canvas.height = (maxY + 1) * pixelSize;
 
-  ctx.fillStyle="#fff";
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
   for(const l of lines){
     if(!l.includes("=")) continue;
-    const [p,c]=l.split("=");
-    const [x,y]=p.split(",").map(Number);
-    ctx.fillStyle=c;
-    ctx.fillRect(x*pixelSize,y*pixelSize,pixelSize,pixelSize);
+    const [p,c] = l.split("=");
+    const [x,y] = p.split(",").map(Number);
+    ctx.fillStyle = c;
+    ctx.fillRect(
+      x * pixelSize,
+      y * pixelSize,
+      pixelSize,
+      pixelSize
+    );
   }
 }
 
-function imageToText(){
-  const file=document.getElementById("imageInput").files[0];
+function textToImage(){
+  const text = document.getElementById("textInput").value;
+  if(text.trim()) parseAndDraw(text);
+}
+
+function fileToImage(){
+  const file = document.getElementById("txtFile").files[0];
   if(!file) return;
 
-  const img=new Image();
-  img.onload=()=>{
-    const c=document.createElement("canvas");
-    c.width=img.width;
-    c.height=img.height;
-    const ctx=c.getContext("2d");
-    ctx.drawImage(img,0,0);
-
-    const data=ctx.getImageData(0,0,c.width,c.height).data;
-    let out=[];
-
-    for(let y=0;y<c.height;y++){
-      for(let x=0;x<c.width;x++){
-        const i=(y*c.width+x)*4;
-        const r=data[i],g=data[i+1],b=data[i+2];
-        if(r||g||b){
-          out.push(`${x},${y}=#${hex(r)}${hex(g)}${hex(b)}`);
-        }
-      }
-    }
-
-    generatedTXT=out.join("\n");
-
-    if(out.length<5000){
-      document.getElementById("textInput").value=generatedTXT;
-    }else{
-      alert("Görsel büyük. TXT indirilebilir olarak hazırlandı.");
-    }
+  const reader = new FileReader();
+  reader.onload = () => {
+    parseAndDraw(reader.result);
   };
-  img.src=URL.createObjectURL(file);
-}
-
-function hex(v){
-  return v.toString(16).padStart(2,"0").toUpperCase();
-}
-
-function downloadTXT(){
-  if(!generatedTXT) return;
-  const blob=new Blob([generatedTXT],{type:"text/plain"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="image.hgti";
-  a.click();
+  reader.readAsText(file);
 }
 </script>
 
