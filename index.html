@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Henry Games</title>
+
+<style>
+:root{
+  --bg:#F6F1E8;
+  --primary:#2FAF9B;
+  --primary-light:#6FD6C4;
+  --text:#1F2A2A;
+  --border:#C9E6DF;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family: system-ui, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+header{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:24px 32px;
+}
+
+header img{
+  height:64px;
+}
+
+header h1{
+  font-size:1.8rem;
+  margin:0;
+}
+
+main{
+  padding:32px;
+}
+
+.card{
+  background:#ffffffaa;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:24px;
+  max-width:600px;
+}
+
+button{
+  background:var(--primary);
+  color:white;
+  border:none;
+  padding:12px 20px;
+  border-radius:10px;
+  font-size:1rem;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+button:hover{
+  background:var(--primary-light);
+}
+
+button.outline{
+  background:transparent;
+  color:var(--primary);
+  border:2px solid var(--primary);
+}
+
+button.outline:hover{
+  background:var(--primary);
+  color:white;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <img src="logo.png" alt="Henry Games Logo">
+  <h1>Henry Games</h1>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Hoş geldin</h2>
+    <p>
+      Burası Henry Games.  
+      Deneyler, araçlar, formatlar ve biraz da nerdlük.
+    </p>
+
+    <button>Başla</button>
+    <button class="outline">GitHub</button>
+  </div>
+</main>
+
+</body>
+</html>
