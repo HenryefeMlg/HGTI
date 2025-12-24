@@ -2,8 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Henry Games – Görsel ↔ TXT</title>
+<title>HGTI Studio</title>
 
 <style>
 :root{
@@ -11,14 +10,13 @@
   --primary:#2FAF9B;
   --primary-light:#6FD6C4;
   --text:#1F2A2A;
-  --border:#C9E6DF;
+  --muted:#6b6b6b;
 }
-
-*{box-sizing:border-box}
 
 body{
   margin:0;
-  font-family:system-ui, sans-serif;
+  padding:24px;
+  font-family: system-ui, sans-serif;
   background:var(--bg);
   color:var(--text);
 }
@@ -27,58 +25,70 @@ header{
   display:flex;
   align-items:center;
   gap:16px;
-  padding:24px 32px;
+  margin-bottom:20px;
 }
 
-header img{height:64px}
+header img{ height:56px; }
 
-main{padding:32px}
-
-.card{
-  background:#ffffffcc;
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:24px;
-  max-width:900px;
-}
-
-.section{
-  margin-top:24px;
-}
-
-label{
-  font-size:.9rem;
-  opacity:.75;
-}
-
-.row{
-  display:flex;
-  gap:16px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-
-input[type="file"],
-input[type="number"]{
-  padding:8px;
+textarea{
+  width:100%;
+  height:140px;
+  font-family: monospace;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #ccc;
 }
 
 button{
+  padding:10px 16px;
+  border:none;
+  border-radius:10px;
   background:var(--primary);
   color:white;
-  border:none;
-  padding:10px 16px;
-  border-radius:10px;
+  font-size:0.9rem;
   cursor:pointer;
+  white-space:nowrap;
 }
 
-button:hover{background:var(--primary-light)}
+button.secondary{
+  background:#ddd;
+  color:#333;
+}
 
-.preview{
-  margin-top:16px;
-  max-width:100%;
+.canvas-wrapper{
+  position:relative;
+  margin-top:24px;
+  display:inline-block;
+}
+
+canvas{
+  border:1px solid #999;
+  image-rendering: pixelated;
+}
+
+.top-controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  background:#ffffffcc;
+  padding:10px 12px;
   border-radius:12px;
-  border:1px dashed var(--border);
+  margin-bottom:10px;
+  font-size:0.85rem;
+}
+
+.top-controls input{ width:70px; }
+
+.file-hint{
+  font-size:0.75rem;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+
+.file-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
 }
 </style>
 </head>
@@ -86,125 +96,171 @@ button:hover{background:var(--primary-light)}
 <body>
 
 <header>
-  <img src="logo.png" alt="Henry Games Logo">
-  <h1>Henry Games</h1>
+  <img src="logo.png" alt="Henry Games">
+  <h1>HGTI Studio</h1>
 </header>
 
-<main>
-<div class="card">
+<h3>TXT / HGTI → Görsel</h3>
+<textarea id="textInput">
+0,0=#FF0000
+1,0=#00FF00
+2,0=#0000FF
+</textarea>
+<br>
+<button onclick="drawFromText()">Görsele Çevir</button>
 
-<h2>Görsel ↔ TXT Dönüştürücü</h2>
+<h3>Dosya Yükle</h3>
 
-<!-- GÖRSEL → TXT -->
-<div class="section">
-  <label>PNG / JPEG / WEBP görsel yükle (yüklenince otomatik TXT oluşur)</label>
-  <div class="row">
-    <input type="file" id="imageInput" accept="image/png,image/jpeg,image/webp">
-    <button onclick="downloadTXT()">TXT olarak indir</button>
+<div class="file-hint">PNG / JPEG / WEBP — görseli TXT (HGTI) formatına çevirir</div>
+<div class="file-row">
+  <input type="file" id="imageInput" accept="image/*">
+  <button class="secondary" onclick="downloadTXT()">TXT indir</button>
+</div>
+
+<br>
+
+<div class="file-hint">TXT / HGTI — piksel tanımlarından görsel oluşturur</div>
+<div class="file-row">
+  <input type="file" id="textFileInput" accept=".txt,.hgti">
+  <button onclick="drawFromText()">Görsele çevir</button>
+</div>
+
+<div class="canvas-wrapper">
+
+  <div class="top-controls">
+    <label>Genişlik(px)</label>
+    <input type="number" id="wInput">
+
+    <label>Yükseklik(px)</label>
+    <input type="number" id="hInput">
+
+    <label>Piksel</label>
+    <input type="number" id="pixelInput" value="10" min="1">
+
+    <button onclick="applyResize()">Uygula</button>
   </div>
-</div>
 
-<!-- TXT → GÖRSEL -->
-<div class="section">
-  <label>TXT veya özel format dosyanı yükle (yüklenince görsel olur)</label>
-  <div class="row">
-    <input type="file" id="txtInput" accept=".txt">
-    <button onclick="renderFromTXT()">Görsele çevir</button>
-  </div>
+  <canvas id="canvas"></canvas>
 </div>
-
-<!-- PİKSEL AYARLARI -->
-<div class="section">
-  <label>Piksel boyutu (opsiyonel)</label>
-  <div class="row">
-    <input type="number" id="w" placeholder="Genişlik (px)">
-    <input type="number" id="h" placeholder="Yükseklik (px)">
-    <button onclick="applySize()">Uygula</button>
-  </div>
-</div>
-
-<img id="preview" class="preview">
-
-</div>
-</main>
 
 <script>
-let canvas=document.createElement("canvas");
-let ctx=canvas.getContext("2d");
-let lastImage=null;
 let generatedTXT="";
+let lastImageData=null;
 
-imageInput.onchange=e=>{
-  const file=e.target.files[0];
-  if(!file)return;
+/* TXT -> GÖRSEL */
+function drawFromText(){
+  const text=textInput.value;
+  const pixel=Number(pixelInput.value)||10;
+  const lines=text.split("\n");
+
+  let maxX=0,maxY=0;
+  lines.forEach(l=>{
+    if(!l.includes("=")) return;
+    const [x,y]=l.split("=")[0].split(",").map(Number);
+    maxX=Math.max(maxX,x);
+    maxY=Math.max(maxY,y);
+  });
+
+  const canvas=document.getElementById("canvas");
+  const ctx=canvas.getContext("2d");
+  canvas.width=(maxX+1)*pixel;
+  canvas.height=(maxY+1)*pixel;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  lines.forEach(l=>{
+    if(!l.includes("=")) return;
+    const [p,c]=l.split("=");
+    const [x,y]=p.split(",").map(Number);
+    ctx.fillStyle=c;
+    ctx.fillRect(x*pixel,y*pixel,pixel,pixel);
+  });
+}
+
+/* GÖRSEL -> TXT (OTOMATİK) */
+imageInput.addEventListener("change",()=>{
+  const file=imageInput.files[0];
+  if(!file) return;
+
   const img=new Image();
   img.onload=()=>{
-    canvas.width=img.width;
-    canvas.height=img.height;
-    ctx.drawImage(img,0,0);
-    lastImage=img;
-    preview.src=canvas.toDataURL();
+    const w=wInput.value?Number(wInput.value):img.width;
+    const h=hInput.value?Number(hInput.value):img.height;
+
+    const c=document.createElement("canvas");
+    c.width=w;
+    c.height=h;
+    const ctx=c.getContext("2d");
+    ctx.drawImage(img,0,0,w,h);
+
+    lastImageData=ctx.getImageData(0,0,w,h);
     generateTXT();
-  }
+    drawFromImageData();
+  };
   img.src=URL.createObjectURL(file);
-};
+});
+
+/* TXT DOSYASI YÜKLE */
+textFileInput.addEventListener("change",()=>{
+  const file=textFileInput.files[0];
+  if(!file) return;
+
+  const reader=new FileReader();
+  reader.onload=()=>{
+    textInput.value=reader.result;
+    drawFromText();
+  };
+  reader.readAsText(file);
+});
 
 function generateTXT(){
-  const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-  let txt=`${canvas.width},${canvas.height}\n`;
-  for(let i=0;i<data.length;i+=4){
-    txt+=`${data[i]},${data[i+1]},${data[i+2]},${data[i+3]}\n`;
+  const {data,width,height}=lastImageData;
+  let out=[];
+  for(let y=0;y<height;y++){
+    for(let x=0;x<width;x++){
+      const i=(y*width+x)*4;
+      if(data[i+3]>0){
+        out.push(`${x},${y}=#${hex(data[i])}${hex(data[i+1])}${hex(data[i+2])}`);
+      }
+    }
   }
-  generatedTXT=txt;
+  generatedTXT=out.join("\n");
+}
+
+function drawFromImageData(){
+  const pixel=Number(pixelInput.value)||10;
+  const {data,width,height}=lastImageData;
+
+  const canvas=document.getElementById("canvas");
+  const ctx=canvas.getContext("2d");
+  canvas.width=width*pixel;
+  canvas.height=height*pixel;
+
+  for(let y=0;y<height;y++){
+    for(let x=0;x<width;x++){
+      const i=(y*width+x)*4;
+      if(data[i+3]>0){
+        ctx.fillStyle=`rgb(${data[i]},${data[i+1]},${data[i+2]})`;
+        ctx.fillRect(x*pixel,y*pixel,pixel,pixel);
+      }
+    }
+  }
+}
+
+function applyResize(){
+  if(lastImageData) drawFromImageData();
+}
+
+function hex(v){
+  return v.toString(16).padStart(2,"0").toUpperCase();
 }
 
 function downloadTXT(){
+  if(!generatedTXT) return;
   const blob=new Blob([generatedTXT],{type:"text/plain"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
-  a.download="image.txt";
+  a.download="image.hgti";
   a.click();
-}
-
-txtInput.onchange=e=>{
-  const file=e.target.files[0];
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=()=>drawFromTXT(reader.result);
-  reader.readAsText(file);
-};
-
-function drawFromTXT(txt){
-  const lines=txt.trim().split("\n");
-  const [w,h]=lines[0].split(",").map(Number);
-  canvas.width=w;
-  canvas.height=h;
-  const imgData=ctx.createImageData(w,h);
-  let p=0;
-  for(let i=1;i<lines.length;i++){
-    const [r,g,b,a]=lines[i].split(",").map(Number);
-    imgData.data[p++]=r;
-    imgData.data[p++]=g;
-    imgData.data[p++]=b;
-    imgData.data[p++]=a;
-  }
-  ctx.putImageData(imgData,0,0);
-  preview.src=canvas.toDataURL();
-}
-
-function renderFromTXT(){
-  if(preview.src==="")return;
-}
-
-function applySize(){
-  if(!lastImage)return;
-  const nw=w.value||canvas.width;
-  const nh=h.value||canvas.height;
-  canvas.width=nw;
-  canvas.height=nh;
-  ctx.drawImage(lastImage,0,0,nw,nh);
-  preview.src=canvas.toDataURL();
-  generateTXT();
 }
 </script>
 
