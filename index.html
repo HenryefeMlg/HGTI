@@ -65,7 +65,7 @@ canvas{
   image-rendering: pixelated;
 }
 
-/* ÜST KONTROL PANELİ */
+/* ÜST KONTROLLER */
 .top-controls{
   display:flex;
   gap:10px;
@@ -99,20 +99,20 @@ canvas{
 <br>
 <button onclick="drawFromText()">Görsele Çevir</button>
 
-<h3>Görsel Yükle (Otomatik TXT Oluşturur)</h3>
+<h3>Dosya Yükle</h3>
 <input type="file" id="imageInput" accept="image/*">
+<input type="file" id="textFileInput" accept=".txt,.hgti">
 <br>
 <button class="secondary" onclick="downloadTXT()">TXT İndir</button>
 
 <div class="canvas-wrapper">
 
-  <!-- GÖRSEL ÜSTÜ AYARLAR -->
   <div class="top-controls">
     <label>Genişlik(px)</label>
-    <input type="number" id="wInput" placeholder="auto">
+    <input type="number" id="wInput">
 
     <label>Yükseklik(px)</label>
-    <input type="number" id="hInput" placeholder="auto">
+    <input type="number" id="hInput">
 
     <label>Piksel</label>
     <input type="number" id="pixelInput" value="10" min="1">
@@ -124,20 +124,18 @@ canvas{
 </div>
 
 <script>
-let generatedTXT = "";
-let lastImageData = null;
+let generatedTXT="";
+let lastImageData=null;
 
+/* ========== TXT -> GÖRSEL ========== */
 function drawFromText(){
-  const text = document.getElementById("textInput").value;
+  const text=textInput.value;
   renderFromText(text);
 }
 
 function renderFromText(text){
-  const pixel = Number(document.getElementById("pixelInput").value) || 10;
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d");
-
-  const lines = text.split("\n");
+  const pixel=Number(pixelInput.value)||10;
+  const lines=text.split("\n");
   let maxX=0,maxY=0;
 
   lines.forEach(l=>{
@@ -148,6 +146,8 @@ function renderFromText(text){
     maxY=Math.max(maxY,y);
   });
 
+  const canvas=document.getElementById("canvas");
+  const ctx=canvas.getContext("2d");
   canvas.width=(maxX+1)*pixel;
   canvas.height=(maxY+1)*pixel;
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -161,14 +161,15 @@ function renderFromText(text){
   });
 }
 
-document.getElementById("imageInput").addEventListener("change",()=>{
+/* ========== GÖRSEL -> TXT (OTOMATİK) ========== */
+imageInput.addEventListener("change",()=>{
   const file=imageInput.files[0];
   if(!file) return;
 
   const img=new Image();
   img.onload=()=>{
-    const w=Number(wInput.value)||img.width;
-    const h=Number(hInput.value)||img.height;
+    const w=wInput.value?Number(wInput.value):img.width;
+    const h=hInput.value?Number(hInput.value):img.height;
 
     const c=document.createElement("canvas");
     c.width=w;
@@ -177,22 +178,35 @@ document.getElementById("imageInput").addEventListener("change",()=>{
     ctx.drawImage(img,0,0,w,h);
 
     lastImageData=ctx.getImageData(0,0,w,h);
-    generateTXTFromImage();
-    drawCanvasFromImageData();
+    generateTXT();
+    drawFromImageData();
   };
   img.src=URL.createObjectURL(file);
 });
 
-function generateTXTFromImage(){
-  const d=lastImageData.data;
-  const w=lastImageData.width;
-  const h=lastImageData.height;
+/* ========== TXT DOSYASI YÜKLE -> GÖRSEL ========== */
+textFileInput.addEventListener("change",()=>{
+  const file=textFileInput.files[0];
+  if(!file) return;
+
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const content=reader.result;
+    textInput.value=content;
+    renderFromText(content);
+  };
+  reader.readAsText(file);
+});
+
+/* ========== ORTAK ========== */
+function generateTXT(){
+  const {data,width,height}=lastImageData;
   let out=[];
 
-  for(let y=0;y<h;y++){
-    for(let x=0;x<w;x++){
-      const i=(y*w+x)*4;
-      const r=d[i],g=d[i+1],b=d[i+2],a=d[i+3];
+  for(let y=0;y<height;y++){
+    for(let x=0;x<width;x++){
+      const i=(y*width+x)*4;
+      const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];
       if(a>0){
         out.push(`${x},${y}=#${hex(r)}${hex(g)}${hex(b)}`);
       }
@@ -201,12 +215,12 @@ function generateTXTFromImage(){
   generatedTXT=out.join("\n");
 }
 
-function drawCanvasFromImageData(){
+function drawFromImageData(){
   const pixel=Number(pixelInput.value)||10;
+  const {data,width,height}=lastImageData;
+
   const canvas=document.getElementById("canvas");
   const ctx=canvas.getContext("2d");
-  const {width,height,data}=lastImageData;
-
   canvas.width=width*pixel;
   canvas.height=height*pixel;
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -224,8 +238,7 @@ function drawCanvasFromImageData(){
 }
 
 function applyResize(){
-  if(!lastImageData) return;
-  drawCanvasFromImageData();
+  if(lastImageData) drawFromImageData();
 }
 
 function hex(v){
