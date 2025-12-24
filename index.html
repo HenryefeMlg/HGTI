@@ -56,11 +56,34 @@ button.secondary{
   color:#333;
 }
 
+.canvas-wrapper{
+  position:relative;
+  display:inline-block;
+  margin-top:20px;
+}
+
 canvas{
   display:block;
-  margin-top:20px;
   border:1px solid #999;
   image-rendering: pixelated;
+}
+
+/* GÖRSEL ÜSTÜ AYAR PANELİ */
+.overlay-controls{
+  position:absolute;
+  top:8px;
+  left:8px;
+  background:rgba(246,241,232,0.9);
+  padding:8px 10px;
+  border-radius:8px;
+  font-size:0.85rem;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.overlay-controls input{
+  width:56px;
 }
 </style>
 </head>
@@ -87,14 +110,34 @@ canvas{
 <button onclick="imageToText()">TXT’ye Dönüştür</button>
 <button class="secondary" onclick="downloadTXT()">TXT İndir</button>
 
-<canvas id="canvas"></canvas>
+<div class="canvas-wrapper">
+  <canvas id="canvas"></canvas>
+
+  <!-- OPSİYONEL PİKSEL AYARLARI -->
+  <div class="overlay-controls">
+    <label>Piksel</label>
+    <input type="number" id="pixelSizeInput" value="10" min="1">
+    <label>Ölçek</label>
+    <input type="number" id="scaleInput" value="1" min="0.1" step="0.1">
+  </div>
+</div>
+
+<h3>TXT Dosyası Yükle (Otomatik Görsele Çevirir)</h3>
+<input type="file" id="txtFileInput" accept=".txt,.hgti">
 
 <script>
-const pixelSize = 10;
 let generatedTXT = "";
 
-function textToImage(){
-  const text = document.getElementById("textInput").value;
+function getPixelSettings(){
+  return {
+    pixelSize: Number(document.getElementById("pixelSizeInput").value) || 10,
+    scale: Number(document.getElementById("scaleInput").value) || 1
+  };
+}
+
+function textToImageFromString(text){
+  const { pixelSize, scale } = getPixelSettings();
+
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
   const lines = text.split("\n");
@@ -108,11 +151,11 @@ function textToImage(){
     maxY=Math.max(maxY,y);
   }
 
-  canvas.width=(maxX+1)*pixelSize;
-  canvas.height=(maxY+1)*pixelSize;
+  canvas.width=(maxX+1)*pixelSize*scale;
+  canvas.height=(maxY+1)*pixelSize*scale;
 
-  ctx.fillStyle="#fff";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.setTransform(scale,0,0,scale,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
   for(const l of lines){
     if(!l.includes("=")) continue;
@@ -121,6 +164,11 @@ function textToImage(){
     ctx.fillStyle=c;
     ctx.fillRect(x*pixelSize,y*pixelSize,pixelSize,pixelSize);
   }
+}
+
+function textToImage(){
+  const text=document.getElementById("textInput").value;
+  textToImageFromString(text);
 }
 
 function imageToText(){
@@ -141,8 +189,8 @@ function imageToText(){
     for(let y=0;y<c.height;y++){
       for(let x=0;x<c.width;x++){
         const i=(y*c.width+x)*4;
-        const r=data[i],g=data[i+1],b=data[i+2];
-        if(r||g||b){
+        const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];
+        if(a>0){
           out.push(`${x},${y}=#${hex(r)}${hex(g)}${hex(b)}`);
         }
       }
@@ -171,6 +219,19 @@ function downloadTXT(){
   a.download="image.hgti";
   a.click();
 }
+
+document.getElementById("txtFileInput").addEventListener("change",e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const content=reader.result;
+    document.getElementById("textInput").value=content;
+    textToImageFromString(content);
+  };
+  reader.readAsText(file);
+});
 </script>
 
 </body>
