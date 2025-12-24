@@ -10,6 +10,7 @@
   --primary:#2FAF9B;
   --primary-light:#6FD6C4;
   --text:#1F2A2A;
+  --muted:#6b6b6b;
 }
 
 body{
@@ -65,7 +66,6 @@ canvas{
   image-rendering: pixelated;
 }
 
-/* ÜST KONTROLLER */
 .top-controls{
   display:flex;
   gap:10px;
@@ -79,6 +79,12 @@ canvas{
 
 .top-controls input{
   width:70px;
+}
+
+.file-hint{
+  font-size:0.75rem;
+  color:var(--muted);
+  margin-bottom:4px;
 }
 </style>
 </head>
@@ -100,8 +106,17 @@ canvas{
 <button onclick="drawFromText()">Görsele Çevir</button>
 
 <h3>Dosya Yükle</h3>
-<input type="file" id="imageInput" accept="image/*">
-<input type="file" id="textFileInput" accept=".txt,.hgti">
+
+<div>
+  <div class="file-hint">PNG / JPG / WEBP — görseli TXT (HGTI) formatına çevirir</div>
+  <input type="file" id="imageInput" accept="image/*">
+</div>
+
+<div style="margin-top:8px">
+  <div class="file-hint">TXT / HGTI — piksel tanımlarından görsel oluşturur</div>
+  <input type="file" id="textFileInput" accept=".txt,.hgti">
+</div>
+
 <br>
 <button class="secondary" onclick="downloadTXT()">TXT İndir</button>
 
@@ -127,7 +142,6 @@ canvas{
 let generatedTXT="";
 let lastImageData=null;
 
-/* ========== TXT -> GÖRSEL ========== */
 function drawFromText(){
   const text=textInput.value;
   renderFromText(text);
@@ -161,7 +175,6 @@ function renderFromText(text){
   });
 }
 
-/* ========== GÖRSEL -> TXT (OTOMATİK) ========== */
 imageInput.addEventListener("change",()=>{
   const file=imageInput.files[0];
   if(!file) return;
@@ -184,7 +197,6 @@ imageInput.addEventListener("change",()=>{
   img.src=URL.createObjectURL(file);
 });
 
-/* ========== TXT DOSYASI YÜKLE -> GÖRSEL ========== */
 textFileInput.addEventListener("change",()=>{
   const file=textFileInput.files[0];
   if(!file) return;
@@ -198,7 +210,6 @@ textFileInput.addEventListener("change",()=>{
   reader.readAsText(file);
 });
 
-/* ========== ORTAK ========== */
 function generateTXT(){
   const {data,width,height}=lastImageData;
   let out=[];
